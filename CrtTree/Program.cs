@@ -29,6 +29,18 @@ namespace CrtTree
             opts.baseDir = Misc.GetLongFilenameNotation(opts.baseDir);
             Console.Error.WriteLine($"baseDir: {opts.baseDir}");
 
+            if (!File.Exists(opts.filename))
+            {
+                Console.Error.WriteLine($"input file does not exists. [{opts.filename}]");
+                return 2;
+            }
+
+            if (Misc.IsDirectory(opts.baseDir))
+            {
+                Console.Error.WriteLine($"base directory is not a directory. [{opts.baseDir}]");
+                return 4;
+            }
+
             IEnumerable<string> directoriesByLevelAscending = 
                 File
                 .ReadLines(opts.filename)

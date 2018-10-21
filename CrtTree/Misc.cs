@@ -65,5 +65,22 @@ namespace CrtTree
             }
             return Filename;
         }
+        public static bool IsDirectory(string dir)
+        {
+            uint rc = Native.GetFileAttributesW(dir);
+
+            if (rc == uint.MaxValue)
+            {
+                //int LastError = Spi.Win32.GetLastWin32Error();
+                return false;   // doesn't exist
+            }
+            /*
+            FILE_ATTRIBUTE_DIRECTORY
+            16 (0x10)
+            The handle that identifies a directory.
+            */
+            //return (rc & 0x10) != 0;
+            return (rc & (uint)Native.FileAttributes.Directory) != 0;
+        }
     }
 }
