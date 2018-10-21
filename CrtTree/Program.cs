@@ -35,7 +35,7 @@ namespace CrtTree
                 return 2;
             }
 
-            if (Misc.IsDirectory(opts.baseDir))
+            if (!Misc.IsDirectory(opts.baseDir))
             {
                 Console.Error.WriteLine($"base directory is not a directory. [{opts.baseDir}]");
                 return 4;
