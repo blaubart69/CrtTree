@@ -103,6 +103,7 @@ namespace Spi
                 if ( foundOpt == null )
                 {
                     OnUnknown(curr.ToString());
+                    break;
                 }
                 else
                 {
@@ -150,6 +151,7 @@ namespace Spi
             if ( foundOpt == null )
             {
                 OnUnknown?.Invoke(optname);
+                ++i;
             }
             else
             {
