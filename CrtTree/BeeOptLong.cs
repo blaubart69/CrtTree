@@ -15,24 +15,20 @@ namespace Spi
 
     public class BeeOpts
     {
-        public readonly char        opt;
-        public readonly string      optLong;
-        public readonly OPTTYPE     type;
-        public readonly string      desc;
+        public readonly char? opt;
+        public readonly string optLong;
+        public readonly OPTTYPE type;
+        public readonly string desc;
 
-        public readonly OnOption    OnOptionCallback;
+        public readonly OnOption OnOptionCallback;
 
-        private bool _wasFound;
-
-        public BeeOpts(char opt, string optLong, OPTTYPE type, string desc, OnOption OnOptionCallback)
+        public BeeOpts(char? opt, string optLong, OPTTYPE type, string desc, OnOption OnOptionCallback)
         {
             this.opt = opt;
             this.optLong = optLong;
             this.desc = desc;
             this.type = type;
             this.OnOptionCallback = OnOptionCallback;
-
-            this._wasFound = false;
         }
         public static void PrintOptions(IEnumerable<BeeOpts> opts)
         {
@@ -42,10 +38,11 @@ namespace Spi
              -n, --dryrun               show what would be deleted
              -h, --help                 show this message and exit
             */
-            foreach ( BeeOpts o in opts )
+            foreach (BeeOpts o in opts)
             {
+                string OneCharOpt = o.opt.HasValue ? $"-{o.opt.Value}," : "   ";
                 string valueOpt = o.type == OPTTYPE.VALUE ? "=VALUE" : String.Empty;
-                string left = $"  -{o.opt}, --{o.optLong}{valueOpt}";
+                string left = $"  {OneCharOpt} --{o.optLong}{valueOpt}";
                 Console.Error.WriteLine($"{left,-30}{o.desc}");
             }
         }
@@ -53,20 +50,20 @@ namespace Spi
         {
             List<string> parsedArgs = new List<string>();
 
-            int i = 0;
-            while (i < args.Length)
+            int argIdx = 0;
+            while (argIdx < args.Length)
             {
-                string curr = args[i];
+                string curr = args[argIdx];
 
                 if ( curr.StartsWith("--") )
                 {
                     if (curr.Length > 2)
                     {
-                        ParseLong(args, opts, ref i, OnUnknown);
+                        ParseLong(args, opts, ref argIdx, OnUnknown);
                     }
                     else
                     {
-                        parsedArgs.AddRange(args.Skip(i + 1));
+                        parsedArgs.AddRange(args.Skip(argIdx + 1));
                         break;
                     }
                 }
@@ -74,7 +71,7 @@ namespace Spi
                 {
                     if (curr.Length > 1)
                     {
-                        ParseShort(args, opts, ref i, OnUnknown);
+                        ParseShort(args, opts, ref argIdx, OnUnknown);
                     }
                     else
                     {
@@ -83,46 +80,44 @@ namespace Spi
                 }
                 else
                 {
-                    parsedArgs.Add(args[i]);
+                    parsedArgs.Add(args[argIdx]);
                 }
-                ++i;
+                ++argIdx;
             }
 
             return parsedArgs;
         }
-        private static void ParseShort(string[] args, IList<BeeOpts> opts, ref int i, OnUnknownOption OnUnknown)
+        private static void ParseShort(string[] args, IList<BeeOpts> opts, ref int currArgIdx, OnUnknownOption OnUnknown)
         {
-            string currArg = args[i];
-            int j = 1;
+            string currArg = args[currArgIdx];
+            int shotOptIdx = 1; // skip beginning "-"
 
-            while (j < currArg.Length)
+            while (shotOptIdx < currArg.Length)
             {
-                char curr = currArg[j];
+                char curr = currArg[shotOptIdx];
 
                 BeeOpts foundOpt = opts.FirstOrDefault(o => o.opt == curr);
                 if ( foundOpt == null )
                 {
                     OnUnknown(curr.ToString());
-                    break;
+                    ++shotOptIdx;
                 }
                 else
                 {
-                    foundOpt._wasFound = true;
-
                     if ( foundOpt.type == OPTTYPE.BOOL )
                     {
                         foundOpt.OnOptionCallback(null);
-                        ++j;
+                        ++shotOptIdx;
                     }
                     else if (foundOpt.type == OPTTYPE.VALUE)
                     {
-                        if (j < currArg.Length - 1)     
+                        if (shotOptIdx < currArg.Length - 1)     
                         {
-                            foundOpt.OnOptionCallback(currArg.Substring(j + 1));    // rest is the value
+                            foundOpt.OnOptionCallback(currArg.Substring(shotOptIdx + 1));    // rest is the value
                         }
                         else
                         {
-                            string value = ReadNextAsArg(args, ref i);
+                            string value = ReadNextAsArg(args, ref currArgIdx);
                             foundOpt.OnOptionCallback(value);
                         }
                         break;
@@ -130,9 +125,9 @@ namespace Spi
                 }
             }
         }
-        private static void ParseLong(string[] args, IList<BeeOpts> opts, ref int i, OnUnknownOption OnUnknown)
+        private static void ParseLong(string[] args, IList<BeeOpts> opts, ref int currArgIdx, OnUnknownOption OnUnknown)
         {
-            string longOpt = args[i].Substring(2);
+            string longOpt = args[currArgIdx].Substring(2);
 
             string[] optWithValue = longOpt.Split('=');
 
@@ -151,12 +146,9 @@ namespace Spi
             if ( foundOpt == null )
             {
                 OnUnknown?.Invoke(optname);
-                ++i;
             }
             else
             {
-                foundOpt._wasFound = true;
-
                 if (foundOpt.type == OPTTYPE.BOOL)
                 {
                     foundOpt.OnOptionCallback(null);
@@ -169,7 +161,7 @@ namespace Spi
                     }
                     else
                     {
-                        string value = ReadNextAsArg(args, ref i);
+                        string value = ReadNextAsArg(args, ref currArgIdx);
                         foundOpt.OnOptionCallback(value);
                     }
                 }
