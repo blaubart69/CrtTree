@@ -41,34 +41,33 @@ namespace CrtTree
                 return 4;
             }
 
-            IEnumerable<string> directoriesByLevelAscending = 
-                File
-                .ReadLines(opts.filename)
-                .OrderBy(dirname => Misc.CountChar(dirname, '\\'));
-
+            IEnumerable<string> directoriesToCreate = File.ReadLines(opts.filename);
             Stats stats = new Stats();
 
             Task CreateTree = Task.Run( () =>
             {
                 using (var errorWriter = TextWriter.Synchronized(new StreamWriter(@".\crtTreeError.txt", append: false, encoding: Encoding.UTF8)))
                 {
-
-                    Win32ErrorCallback OnWin32err =
+                    Native.Win32ApiErrorCallback OnWin32err =
                         (LastErrorCode, Api, Message) =>
                         {
                             errorWriter.WriteLine($"{LastErrorCode}\t{Api}\t{Message}");
                             Interlocked.Increment(ref stats.error);
                         };
 
-                    Action<string> OnExists = (name) => Interlocked.Increment(ref stats.exists);
+                    Action<string> OnExists  = (name)   => Interlocked.Increment(ref stats.exists);
+                    Action         OnCreated = ()       => Interlocked.Increment(ref stats.created);
 
-                    foreach (string dirname in directoriesByLevelAscending)
+                    if (opts.createPath)
                     {
-                        string FullDirname = Path.Combine(opts.baseDir, dirname);
-                        if ( CreateDirectory(FullDirname, OnExists, OnWin32err) )
+                        foreach ( string dirname in directoriesToCreate )
                         {
-                            Interlocked.Increment(ref stats.created);
+                            Misc.CreatePath( Path.Combine(opts.baseDir,dirname), OnWin32err, OnCreated, OnExists);
                         }
+                    }
+                    else
+                    {
+                        CreateByDepthAscending.Run(opts.baseDir, directoriesToCreate, OnWin32err, OnExists, OnCreated);
                     }
                 }
             });
@@ -79,25 +78,6 @@ namespace CrtTree
                 , GenerateText: () => $"created: {stats.created:N0}\texists: {stats.exists:N0}\terror: {stats.error:N0}");
 
             return stats.error > 0 ? 8 : 0;
-        }
-        static bool CreateDirectory(string Fullname, Action<string> OnExists, Win32ErrorCallback OnError)
-        {
-            bool ok = Native.CreateDirectoryW(Fullname, IntPtr.Zero);
-            if ( !ok )
-            {
-                int LastError = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
-
-                if (LastError == 183) // "Cannot create a file when that file already exists."
-                {
-                    OnExists(Fullname);
-                }
-                else
-                {
-                    OnError(LastError, "CreateDirectoryW", Fullname);
-                }
-            }
-
-            return ok;
         }
     }
 }

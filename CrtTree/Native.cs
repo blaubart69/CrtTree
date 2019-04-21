@@ -7,6 +7,8 @@ namespace CrtTree
 
     public class Native
     {
+        public delegate void Win32ApiErrorCallback(int LastError, string Apiname, string Text);
+
         [Flags]
         public enum FileAttributes : uint
         {
@@ -35,6 +37,12 @@ namespace CrtTree
             OpenReparsePoint = 0x00200000,
             OpenNoRecall = 0x00100000,
             FirstPipeInstance = 0x00080000
+        }
+
+        public enum Win32Error : int
+        {
+            ERROR_PATH_NOT_FOUND = 3,
+            ERROR_ACCESS_DENIED = 5
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

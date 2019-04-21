@@ -12,6 +12,7 @@ namespace CrtTree
     {
         public string baseDir;
         public string filename;
+        public bool createPath = false;
     }
     class GetOpts
     {
@@ -22,6 +23,7 @@ namespace CrtTree
             bool showHelp = false;
             var CommandLineOpts = new BeeOptsBuilder()
                 .Add('b', "base", OPTTYPE.VALUE, "basedir",         (v) => opts.baseDir = v)
+                .Add('p', "path", OPTTYPE.BOOL,  "create path",     (v) => opts.createPath = true)
                 .Add('h', "help", OPTTYPE.BOOL,  "show this help",  (v) => showHelp = true)
                 .GetOpts();
             
@@ -47,7 +49,9 @@ namespace CrtTree
         private static void PrintUsage(IEnumerable<BeeOpts> CommandOpts)
         {
             Console.Error.WriteLine("Usage: CrtTree [OPTIONS] {filename}"
-            + "\ncreates directories given in {filename} line by line."
+            + "\ncreates directories given in {filename} line by line.\n"
+            + "\nDirectories (= lines in the textfile) will be sorted ascending by depth. (count of \"\\\")"
+            + "\nThen CreateDirectoryW() is called for each directory."
             );
             Console.Error.WriteLine("\nOptions:");
             BeeOpts.PrintOptions(CommandOpts);

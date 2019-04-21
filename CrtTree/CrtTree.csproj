@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BeeOptLong.cs" />
+    <Compile Include="CreateByDepthAscending.cs" />
     <Compile Include="GetOpts.cs" />
     <Compile Include="Misc.cs" />
     <Compile Include="Native.cs" />
